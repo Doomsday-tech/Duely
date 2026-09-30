@@ -1,0 +1,151 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String           @id @default(uuid())
+  email        String           @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  things       Thing[]
+  categories   Category[]
+  documents    Document[]
+  reminders    Reminder[]
+  actions      Action[]
+  renewals     RenewalHistory[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  name      String
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  things    Thing[]
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model Thing {
+  id              String           @id @default(uuid())
+  userId          String           @map("user_id")
+  categoryId      String?          @map("category_id")
+  name            String
+  description     String?
+  purchaseDate    DateTime?        @map("purchase_date")
+  expiryDate      DateTime?        @map("expiry_date")
+  renewalDate     DateTime?        @map("renewal_date")
+  status          String           @default("ACTIVE")
+  notes           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  documents       Document[]
+  reminders       Reminder[]
+  actions         Action[]
+  renewalHistory  RenewalHistory[]
+
+  @@index([userId])
+  @@index([expiryDate])
+  @@index([status])
+  @@map("things")
+}
+
+model Document {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  thingId       String?   @map("thing_id")
+  filename      String
+  originalName  String    @map("original_name")
+  mimeType      String    @map("mime_type")
+  size          Int
+  filePath      String    @map("file_path")
+  documentType  String?   @map("document_type")
+  issueDate     DateTime? @map("issue_date")
+  expiryDate    DateTime? @map("expiry_date")
+  identifier    String?
+  extractedMeta String?   @map("extracted_meta")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thing         Thing?    @relation(fields: [thingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([thingId])
+  @@map("documents")
+}
+
+model Reminder {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  thingId     String    @map("thing_id")
+  daysBefore  Int       @map("days_before")
+  customDate  DateTime? @map("custom_date")
+  remindAt    DateTime  @map("remind_at")
+  channel     String    @default("IN_APP")
+  status      String    @default("PENDING")
+  triggeredAt DateTime? @map("triggered_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thing       Thing     @relation(fields: [thingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([thingId])
+  @@index([remindAt, status])
+  @@map("reminders")
+}
+
+model Action {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  thingId     String    @map("thing_id")
+  title       String
+  actionUrl   String?   @map("action_url")
+  notes       String?
+  completed   Boolean   @default(false)
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thing       Thing     @relation(fields: [thingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([thingId])
+  @@map("actions")
+}
+
+model RenewalHistory {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  thingId        String    @map("thing_id")
+  previousExpiry DateTime? @map("previous_expiry")
+  newExpiry      DateTime  @map("new_expiry")
+  renewedAt      DateTime  @default(now()) @map("renewed_at")
+  cost           Float?
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thing          Thing     @relation(fields: [thingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([thingId])
+  @@map("renewal_history")
+}
