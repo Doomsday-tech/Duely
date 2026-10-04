@@ -1,0 +1,6 @@
+{
+  "name": "Duely",
+  "description": "Personal life-admin and expiry management application. Know what's due before it becomes a problem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
